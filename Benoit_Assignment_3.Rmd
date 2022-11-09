@@ -19,9 +19,16 @@ library(tidyverse)
 library(here)
 library(ggpubr) # for some graphic applications that extend ggplot2
 library(janitor)
-#install.packages("lsr")
+# install.packages("lsr")
 library(lsr)
 library(effsize)
+library(dplyr)
+# install.packages("qqplotr")
+library(qqplotr)
+library(ggplot2)
+# install.packages("DescTools")
+library(DescTools)
+
 ```
 
 ## Question 1:
@@ -52,9 +59,7 @@ qqplot_san_ant_gobies <- ggplot(data.frame(san_ant_gobies),
                      aes(sample = san_ant_gobies)) +
                      geom_qq() +
                      labs(title = "San Antonio River Gobies") +
-                     theme_minimal() + 
-                     stat_qq() +
-                     stat_qq_line() 
+                     theme_minimal()
 
 qqplot_san_ant_gobies
 ```
@@ -67,74 +72,113 @@ Use your knowledge of statistics to:
 2. explain the results and conclusion of the test you selected
 3. make a figure with caption to best explain the data and results.
 
-parametric or non parametric? t test or anova? do preliminary investigations?
-do not throw ten plots... say I looked at the residuals, looked at the ... then, I decided
-my p value was this, my alpha was this... 
-in this figure... 
+The non-parametric, Mann-Whitney U test (called Wilcox test in R) is the appropriate statistical test becuase the data is not normal; it is skewed. The Wilcox test in R is the pairwise comparison analogous to the Tukey HSD by looking at pairwise Wilcox tests that have been adjusted for multiple comparison, a type of continuity correction. Here we have used the easiest correction, Bonferroni, where the p-value from the pairwise test is multiplied by the number of comparisons.
+
+Since non-parametric evaluations are largely based on comparing medians instead of means, it is suggested that you plot the results using box plots instead of means and 95% confidence intervals as done parametrically. 
 
 ```{r}
-uc_reserves <- c(4, 1, 8, 0, 0, 0, 0, 23, 28, 0, 0, 0, 4, 0, 3, 0, 0, 2, 0, 5, 0, 0, 0, 0, 0)
+uc_reserves <- data.frame(cig_butts=c(4, 1, 8, 0, 0, 0, 0, 23, 28, 0, 0, 0, 4, 0, 3, 0, 0, 2, 0, 5, 0, 0, 0, 0, 0),location="Reserve")
 
-urban_open <- c(33, 9, 9, 7, 2, 38, 9, 20, 0, 39, 18, 41, 25, 164, 37, 60, 55, 45, 14, 3, 69, 60, 13, 1)
 
-summary(uc_reserves)
+urban_open <- data.frame(cig_butts=c(33, 9, 9, 7, 2, 38, 9, 20, 0, 39, 18, 41, 25, 164, 37, 60, 55, 45, 14, 3, 69, 60, 13, 1), location="Urban Open Space")
 
-summary(urban_open)
-```
+cig_df <- rbind(uc_reserves, urban_open)
 
-```{r}
-qqplot_uc_reserves <- ggplot(data.frame(uc_reserves), aes(sample = uc_reserves)) +
+qqplot_uc_reserves <- ggplot((uc_reserves), aes(sample = cig_butts)) +
   geom_qq() +
   labs(title = "UC Reserves") +
   theme_minimal()
 
 qqplot_uc_reserves
 
-qqplot_urban_open <- ggplot(data.frame(urban_open), aes(sample = urban_open)) +
+qqplot_urban_open <- ggplot((urban_open), aes(sample = cig_butts)) +
   geom_qq() +
   labs(title = "Urban Open Space") +
   theme_minimal()
 
 qqplot_urban_open
 
-```
+# showing the skewed data
 
+```
 
 ```{r}
-boxplot_uc_reserves <- ggplot(data = data.frame(uc_reserves), aes(x = uc_reserves)) +
-  geom_boxplot() +
-  theme_minimal()
+pairwise.wilcox.test(cig_df$cig_butts, cig_df$location, p.adjust.method = "bonferroni")
 
-boxplot_uc_reserves
-# ^ looks very strange
-
-density_overlay_uc_reserves <- ggplot(data = data.frame(uc_reserves), aes(x = uc_reserves)) +
-  geom_histogram(aes(y = stat(density))) +
-  geom_density(col = "red", size = 2)
-
-density_overlay_uc_reserves
-# ^ this is showing me that the data is skewed
-
-t.test(uc_reserves, urban_open)
-
-cohensD(uc_reserves, urban_open)
-cohen.d(uc_reserves, urban_open)
-
+wilcox.test(uc_reserves$cig_butts, urban_open$cig_butts, paired = FALSE)
 ```
-Our p-value = 0.0005326. It is <0.05, our alpha level of significance, so we can reject our null hypothesis and conclude that there is a statistical difference between the mean of the two groups, for this question, UC Reserves and Urban Open Space. 
-Cohen's d shows the effect size, which can tell us how large of a difference this actually is. For this question, a cohen's d of 1.16 communicates that: the average cigarette butt load of the UC reserves is 1.16 standard deviations lower than the average cigarette butt load in urban open spaces, which is considered a large effect size. 
+The bonferroni adjustment takes the p value divided by the number of groups (for this, divide by two, due to UC Reserves and Urban Open Space)
+
+Mann Whitney U is an unpaired test of medians, whereas Wilcoxon is paired tests of medians between two groups. Default, paired = FALSE, comparing independent unpaired samples together. 
+
+```{r cig_load_1, fig.align='center',fig.cap="Figure 2. Boxplot showing cigarette butt load for the UC Reserve and for Urban Open Space, the boxes marking quantile 1, the median, quantile 3, and the dots denote the outliers."}
+boxplot_cig_load <- ggplot(data = cig_df, aes(x = location, y = cig_butts)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Cigarette Butt Load", x = "Location", y = "Cigarette Butts")
+
+boxplot_cig_load
+```
+
 
 
 
 
 ## Question 4:
-four groups: 15C, 20C, 25C, 30C
-is there a different in how long it takes for them to hatch depending on the temperature
+Is there evidence that this new species of turtles' time between laid egg and hatching is temperature dependent? 
+
+1. justify the appropriate statistical tests to use
+2. explain the results and conclusion of the test you selected
+3. make a figure with a caption to best explain the data, results, and conclusion
+
+
+Four groups: 15C, 20C, 25C, 30C
+
 how did you look at the data?
 what did you find?
 provide a nice figure?
+
+Load in the data:
 ```{r}
+turtles <- read_csv(here("data", "Turtles.csv"))
+
+turtles_scatter <- ggplot(turtles, aes(x = Temperature, y = Days)) +
+  geom_point() +
+  labs(title = "Relationship between temperature and number of days to turtle egg hatching", x = "Temperature (C)", y = "Days") +
+  geom_smooth(formula = y~x, method = lm) +
+  theme_minimal()
+
+turtles_scatter
+
+# separate out 15C, 20C, 25C, 30C
+turtles_15c <- turtles %>% filter(Temperature == "15")
+
+turtles_20c <- turtles %>% filter(Temperature == "20")
+
+turtles_25c <- turtles %>% filter(Temperature == "25")
+
+turtles_30c <- turtles %>% filter(Temperature == "30")
+```
+
+```{r}
+# do a qqplot for each
+
+qqplot_15c <- ggplot(turtles_15c, 
+                     aes(sample = turtles_15c)) +
+                     geom_qq() +
+                     labs(title = "Turtles at 15C") +
+                     theme_minimal()
+qqplot_15c
 
 ```
 
+
+NEXT:
+shapiro test for normality
+do an anova comparing each
+tukey test
+
+```{r}
+
+```
 
