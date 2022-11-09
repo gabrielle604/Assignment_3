@@ -1,0 +1,140 @@
+---
+title: "Benoit_Assignment_3"
+author: "Gabrielle"
+date: '2022-11-09'
+output: 
+  html_document:
+    code_folding: hide
+---
+
+##### Covers lab 4, 5, and 6 and the R markdown formatting discussed in Lecture 12
+
+- why you chose to do the test you did? did you inspect the data and did it meet the assumptions?
+- there are multiple answers for all of these... you could do a transformation, but you do not need to
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
+
+library(tidyverse)
+library(here)
+library(ggpubr) # for some graphic applications that extend ggplot2
+library(janitor)
+#install.packages("lsr")
+library(lsr)
+library(effsize)
+```
+
+## Question 1:
+In order to determine if the current population in the San Antonio River in Santa Barbara County is different from the historical record, I did a one sample t-test, and set mu to equal 4.2 cm (rather than the default, mu = 0), the value from 1955 document that reported the population mean length of adult tidewater gobies. I did this because I am testing to see if there is a statistical difference between the historical mean length of gobies, and the current mean length of gobies (3.5 cm). The one-sample t-test allows us to compare the mean from sample data to a value, usually testing literature point estimates. This test does assume equal variance. 
+We found a statistical difference between the current San Antonio Goby fish mean length, and the historical 1955 Goby population mean length (t(9 df), p = 0.0008873), ⍺ = 0.05.
+CI: 3.189284, 3.830716
+
+```{r, message=FALSE}
+# San Antonio river gobies in centimeters  
+# data input: creating a vector of data
+san_ant_gobies <- c(2.7, 3.2, 3.2, 3.3, 3.5, 3.6, 3.6, 3.7, 4.0, 4.3)
+
+summary(san_ant_gobies)
+
+san_ant_gobies_one_t <- t.test(san_ant_gobies, mu=4.2)
+san_ant_gobies_one_t
+```
+
+
+## Question 2:
+Are the tidewater goby lengths in question 1 normally distributed? Provide a figure with caption **or** critical statistical test and justify your results and conclusion.
+
+For this data, to look at whether the tidewater goby lengths are normally distributed, we're going to look at a qq plot. It should be mostly a straight line, however, due to there being very few observations,  some wobble to the line is expected. 
+
+```{r goby_1, fig.align='center',fig.cap="Figure 1. Quantile-Quantile plot showing the empirically observed quantiles of San Antonio River Gobies (cm) as a function of quantiles expected from a normal distribution with the same mean and variance as the empirical distribution."}
+# qqplot for san antonio river gobies
+qqplot_san_ant_gobies <- ggplot(data.frame(san_ant_gobies), 
+                     aes(sample = san_ant_gobies)) +
+                     geom_qq() +
+                     labs(title = "San Antonio River Gobies") +
+                     theme_minimal() + 
+                     stat_qq() +
+                     stat_qq_line() 
+
+qqplot_san_ant_gobies
+```
+
+
+## Question 3:
+The UC Tobacco Free Campus Initiative wants to know if the UC reserves have more or less cigarette butt load as urban open spaces. 
+Use your knowledge of statistics to:
+1. justify the appropriate statistical test to use
+2. explain the results and conclusion of the test you selected
+3. make a figure with caption to best explain the data and results.
+
+parametric or non parametric? t test or anova? do preliminary investigations?
+do not throw ten plots... say I looked at the residuals, looked at the ... then, I decided
+my p value was this, my alpha was this... 
+in this figure... 
+
+```{r}
+uc_reserves <- c(4, 1, 8, 0, 0, 0, 0, 23, 28, 0, 0, 0, 4, 0, 3, 0, 0, 2, 0, 5, 0, 0, 0, 0, 0)
+
+urban_open <- c(33, 9, 9, 7, 2, 38, 9, 20, 0, 39, 18, 41, 25, 164, 37, 60, 55, 45, 14, 3, 69, 60, 13, 1)
+
+summary(uc_reserves)
+
+summary(urban_open)
+```
+
+```{r}
+qqplot_uc_reserves <- ggplot(data.frame(uc_reserves), aes(sample = uc_reserves)) +
+  geom_qq() +
+  labs(title = "UC Reserves") +
+  theme_minimal()
+
+qqplot_uc_reserves
+
+qqplot_urban_open <- ggplot(data.frame(urban_open), aes(sample = urban_open)) +
+  geom_qq() +
+  labs(title = "Urban Open Space") +
+  theme_minimal()
+
+qqplot_urban_open
+
+```
+
+
+```{r}
+boxplot_uc_reserves <- ggplot(data = data.frame(uc_reserves), aes(x = uc_reserves)) +
+  geom_boxplot() +
+  theme_minimal()
+
+boxplot_uc_reserves
+# ^ looks very strange
+
+density_overlay_uc_reserves <- ggplot(data = data.frame(uc_reserves), aes(x = uc_reserves)) +
+  geom_histogram(aes(y = stat(density))) +
+  geom_density(col = "red", size = 2)
+
+density_overlay_uc_reserves
+# ^ this is showing me that the data is skewed
+
+t.test(uc_reserves, urban_open)
+
+cohensD(uc_reserves, urban_open)
+cohen.d(uc_reserves, urban_open)
+
+```
+Our p-value = 0.0005326. It is <0.05, our alpha level of significance, so we can reject our null hypothesis and conclude that there is a statistical difference between the mean of the two groups, for this question, UC Reserves and Urban Open Space. 
+Cohen's d shows the effect size, which can tell us how large of a difference this actually is. For this question, a cohen's d of 1.16 communicates that: the average cigarette butt load of the UC reserves is 1.16 standard deviations lower than the average cigarette butt load in urban open spaces, which is considered a large effect size. 
+
+
+
+
+## Question 4:
+four groups: 15C, 20C, 25C, 30C
+is there a different in how long it takes for them to hatch depending on the temperature
+how did you look at the data?
+what did you find?
+provide a nice figure?
+```{r}
+
+```
+
+
