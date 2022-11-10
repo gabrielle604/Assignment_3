@@ -1,16 +1,11 @@
 ---
-title: "Benoit_Assignment_3"
+title: "Assignment 3"
 author: "Gabrielle"
 date: '2022-11-09'
 output: 
   html_document:
     code_folding: hide
 ---
-
-##### Covers lab 4, 5, and 6 and the R markdown formatting discussed in Lecture 12
-
-- why you chose to do the test you did? did you inspect the data and did it meet the assumptions?
-- there are multiple answers for all of these... you could do a transformation, but you do not need to
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning = FALSE,results=FALSE)
@@ -31,13 +26,13 @@ library(DescTools)
 
 ```
 
-## Question 1:
+## 1
 In order to determine if the current population in the San Antonio River in Santa Barbara County is different from the historical record, I did a one sample t-test, and set mu to equal 4.2 cm (rather than the default, mu = 0), the value from 1955 document that reported the population mean length of adult tidewater gobies. I did this because I am testing to see if there is a statistical difference between the historical mean length of gobies, and the current mean length of gobies (3.5 cm). The one-sample t-test allows us to compare the mean from sample data to a value, usually testing literature point estimates. This test does assume equal variance. 
-We found a statistical difference between the current San Antonio Goby fish mean length, and the historical 1955 Goby population mean length (t(9 df), p = 0.0008873), ⍺ = 0.05.
+I found a statistical difference between the current San Antonio Goby fish mean length, and the historical 1955 Goby population mean length (t(9 df), p = 0.0008873), ⍺ = 0.05.
 CI: 3.189284, 3.830716
 
 ```{r, message=FALSE}
-# San Antonio river gobies in centimeters  
+# San Antonio River gobies in centimeters  
 # data input: creating a vector of data
 san_ant_gobies <- c(2.7, 3.2, 3.2, 3.3, 3.5, 3.6, 3.6, 3.7, 4.0, 4.3)
 
@@ -48,19 +43,27 @@ san_ant_gobies_one_t
 ```
 
 
-## Question 2:
+## 2
 Are the tidewater goby lengths in question 1 normally distributed? Provide a figure with caption **or** critical statistical test and justify your results and conclusion.
 
-For this data, to look at whether the tidewater goby lengths are normally distributed, we're going to look at a qq plot. It should be mostly a straight line, however, due to there being very few observations,  some wobble to the line is expected. 
+For this data, to look at whether the tidewater goby lengths are normally distributed, we're going to look at a qq plot. It should be mostly a straight line, however, due to there being very few observations (n=10),  some wobble to the line is expected. 
+
+To determine whether the tidewater goby lengths in question 1 are normally distributed, I carried out a Shapiro-Wilks normaltiy test. W = 0.97657, p = 0.9442. Since this value from the Shapiro Wilk's test is not less than .05, I can assume the sample data comes from a population that is normally distributed.
+
+```{r}
+shapiro.test(san_ant_gobies)
+```
+
 
 ```{r goby_1, fig.align='center',fig.cap="Figure 1. Quantile-Quantile plot showing the empirically observed quantiles of San Antonio River Gobies (cm) as a function of quantiles expected from a normal distribution with the same mean and variance as the empirical distribution."}
 # qqplot for san antonio river gobies
-qqplot_san_ant_gobies <- ggplot(data.frame(san_ant_gobies), 
-                     aes(sample = san_ant_gobies)) +
-                     geom_qq() +
-                     labs(title = "San Antonio River Gobies") +
-                     theme_minimal()
+goby_df<-data.frame(data=san_ant_gobies)
 
+qqplot_san_ant_gobies <- ggplot(data=goby_df, aes(sample = data)) + 
+                         geom_qq() + 
+                         stat_qq_line() +
+                         theme_minimal() +
+                         labs(title = "San Antonio River Gobies") +
 qqplot_san_ant_gobies
 ```
 
@@ -138,6 +141,14 @@ how did you look at the data?
 what did you find?
 provide a nice figure?
 
+
+* not a reflection of temperature but rather of "treatment" (treatment 1, 2, 3, 4)
+* if you move away from two groups, then do ANOVA
+* check assumptions of ANOVA and determine whether to do ANOVA or non-parametric 
+* no data is perfect
+
+
+
 Load in the data:
 ```{r}
 turtles <- read_csv(here("data", "Turtles.csv"))
@@ -150,35 +161,103 @@ turtles_scatter <- ggplot(turtles, aes(x = Temperature, y = Days)) +
 
 turtles_scatter
 
+# you have a discrete treatment (forced temp (which is typically continuous) into being discrete)
+
 # separate out 15C, 20C, 25C, 30C
+# do summary statistics for each of these - do you expect to see a difference? YES
 turtles_15c <- turtles %>% filter(Temperature == "15")
+summary(turtles_15c)
 
 turtles_20c <- turtles %>% filter(Temperature == "20")
+summary(turtles_20c)
 
 turtles_25c <- turtles %>% filter(Temperature == "25")
+summary(turtles_25c)
 
 turtles_30c <- turtles %>% filter(Temperature == "30")
+summary(turtles_30c)
+
 ```
 
 ```{r}
-# do a qqplot for each
+# test for normality using qq plot and shapiros test for each 
+# look at variances - is it wonkey? is it normal? *credibility if they are the same
+# TYPE 1 error ... four groups... what does a p value mean in light of running a bunch of tests!
+# three are normal and one is not *totally fine - you never have data that is perfect
+
 
 qqplot_15c <- ggplot(turtles_15c, 
-                     aes(sample = turtles_15c)) +
+                     aes(sample = Days)) +
                      geom_qq() +
                      labs(title = "Turtles at 15C") +
                      theme_minimal()
 qqplot_15c
 
+shapiro.test(turtles_15c$Days)
+
+qqplot_20c <- ggplot(turtles_20c, 
+                     aes(sample = Days)) +
+                     geom_qq() +
+                     labs(title = "Turtles at 20C") +
+                     theme_minimal()
+qqplot_20c
+
+shapiro.test(turtles_20c$Days)
+
+qqplot_25c <- ggplot(turtles_25c, 
+                     aes(sample = Days)) +
+                     geom_qq() +
+                     labs(title = "Turtles at 25C") +
+                     theme_minimal()
+qqplot_25c
+
+shapiro.test(turtles_25c$Days)
+
+qqplot_30c <- ggplot(turtles_30c, 
+                     aes(sample = Days)) +
+                     geom_qq() +
+                     labs(title = "Turtles at 30C") +
+                     theme_minimal()
+qqplot_30c
+
+shapiro.test(turtles_30c$Days)
+
+
 ```
 
+Since these values from the Shapiro Wilk's tests are not less than .05, we can assume the sample data comes from a population that is normally distributed.
 
-NEXT:
-shapiro test for normality
-do an anova comparing each
-tukey test
+Tukey's test: tukey accounts for doing a bunch of comparisons between groups, and deflates the p value to minimize risk of type one error.
 
 ```{r}
+m_turtles_results <- aov(Days ~ as.factor(Temperature), data = turtles)
 
+m_turtles_results
+
+TukeyHSD(m_turtles_results)
+
+# suppress plots or comment out
+plot(m_turtles_results)
+
+# write about the confirmation of the anova assumptions
 ```
+^^^ do these not make sense?
+We are able to look at the residual plots using the plot() command. Showing residual vs. fitted shows the distribution of turtle egg incubation time in days. These are the diagnostics. 
 
+RESIDUAL PLOT: the red line is showing you the trend in the data 
+Q-Q PLOT: taking the residuals and giving you a Q-Q plot right away for inspection
+SCALE LOCATION: (not used much)… it flags heteroskedasticity; some outliers are a bit farther away… you want to see a flat line
+Cook’s distance: A measure of how much influence a single observation has on your model; could consider removing a data point to see if it improves the cook’s distance BECAUSE you think it is an outlier
+cooks distance of 2 isn’t terrible, but 4, 5, and up are not good
+
+
+```{r turtles_1, fig.align='center',fig.cap="Figure 4. Plot showing data. Displayed are the means of each incubation temperature with the 95% confidence intervals."}
+
+ggline(turtles, x = "Temperature", y = "Days", 
+       main = "Means days of incubation for turtle eggs in each temperature and 95% CI", 
+       add = c("mean_ci"), 
+       color = "dark gray", 
+       ylab = "Days", 
+       xlab = "Temperature", 
+       point.color = "black")
+```
