@@ -28,7 +28,7 @@ library(DescTools)
 
 ## 1
 In order to determine if the current population in the San Antonio River in Santa Barbara County is different from the historical record, I did a one sample t-test, and set mu to equal 4.2 cm (rather than the default, mu = 0), the value from 1955 document that reported the population mean length of adult tidewater gobies. I did this because I am testing to see if there is a statistical difference between the historical mean length of gobies, and the current mean length of gobies (3.5 cm). The one-sample t-test allows us to compare the mean from sample data to a value, usually testing literature point estimates. This test does assume equal variance. 
-I found a statistical difference between the current San Antonio Goby fish mean length, and the historical 1955 Goby population mean length (t(9 df), p = 0.0008873), ⍺ = 0.05.
+I found a statistical difference between the current San Antonio goby fish mean length, and the historical 1955 goby population mean length (t(9 df), p = 0.0008873), ⍺ = 0.05.
 CI: 3.189284, 3.830716
 
 ```{r, message=FALSE}
@@ -44,42 +44,41 @@ san_ant_gobies_one_t
 
 
 ## 2
-Are the tidewater goby lengths in question 1 normally distributed? Provide a figure with caption **or** critical statistical test and justify your results and conclusion.
-
-For this data, to look at whether the tidewater goby lengths are normally distributed, we're going to look at a qq plot. It should be mostly a straight line, however, due to there being very few observations (n=10),  some wobble to the line is expected. 
-
 To determine whether the tidewater goby lengths in question 1 are normally distributed, I carried out a Shapiro-Wilks normaltiy test. W = 0.97657, p = 0.9442. Since this value from the Shapiro Wilk's test is not less than .05, I can assume the sample data comes from a population that is normally distributed.
 
 ```{r}
 shapiro.test(san_ant_gobies)
 ```
 
+Alternative approach:
+For this data, to look at whether the tidewater goby lengths are normally distributed, we're going to look at a qq plot. It should be mostly a straight line, however, due to there being very few observations (n=10),  some wobble to the line is expected. 
 
+(Unfortunately, adding the qq plot stat line is not working. I've talked with Chris and Nathan about this issue, and spent a lot of time googling to try to figure it out, with no luck yet!)
 ```{r goby_1, fig.align='center',fig.cap="Figure 1. Quantile-Quantile plot showing the empirically observed quantiles of San Antonio River Gobies (cm) as a function of quantiles expected from a normal distribution with the same mean and variance as the empirical distribution."}
-# qqplot for san antonio river gobies
-goby_df<-data.frame(data=san_ant_gobies)
 
-qqplot_san_ant_gobies <- ggplot(data=goby_df, aes(sample = data)) + 
+qqplot_san_ant_gobies <- ggplot(data.frame(san_ant_gobies), 
+                                aes(sample = san_ant_gobies)) + 
                          geom_qq() + 
-                         stat_qq_line() +
                          theme_minimal() +
-                         labs(title = "San Antonio River Gobies") +
+                         labs(title = "San Antonio River Gobies")
+
 qqplot_san_ant_gobies
 ```
 
 
-## Question 3:
-The UC Tobacco Free Campus Initiative wants to know if the UC reserves have more or less cigarette butt load as urban open spaces. 
-Use your knowledge of statistics to:
-1. justify the appropriate statistical test to use
-2. explain the results and conclusion of the test you selected
-3. make a figure with caption to best explain the data and results.
+## 3
+The UC Tobacco Free Campus Initiative wants to know if the UC reserves have more or less cigarette butt load as urban open spaces. I determined that the number of cigarette butts at the UC reserve is  statistically significantly less than the number of cigarrette butts in Urban Open Space.
 
-The non-parametric, Mann-Whitney U test (called Wilcox test in R) is the appropriate statistical test becuase the data is not normal; it is skewed. The Wilcox test in R is the pairwise comparison analogous to the Tukey HSD by looking at pairwise Wilcox tests that have been adjusted for multiple comparison, a type of continuity correction. Here we have used the easiest correction, Bonferroni, where the p-value from the pairwise test is multiplied by the number of comparisons.
+The non-parametric, Mann-Whitney U test (called Wilcox test in R) is the appropriate statistical test because the data is not normal; it is skewed - this was observed through looking at the qq plots of residuals and the shapiro wilks tests. 
+The Wilcox test in R is the pairwise comparison analogous to the Tukey HSD by looking at pairwise Wilcox tests that have been adjusted for multiple comparison, a type of continuity correction. Here we have used the easiest correction, Bonferroni, where the p-value from the pairwise test is multiplied by the number of comparisons.
 
-Since non-parametric evaluations are largely based on comparing medians instead of means, it is suggested that you plot the results using box plots instead of means and 95% confidence intervals as done parametrically. 
+Since non-parametric evaluations are largely based on comparing medians instead of means, it is important to plot the results using box plots instead of means and 95% confidence intervals as done parametrically.
 
-```{r}
+The bonferroni adjustment takes the p value divided by the number of groups (for this, divide by two: UC Reserves and Urban Open Space)
+
+Mann Whitney U is an unpaired test of medians, whereas Wilcoxon is paired tests of medians between two groups. The default setting is, paired = FALSE, comparing independent unpaired samples together. 
+
+```{r, fig.show='hide'}
 uc_reserves <- data.frame(cig_butts=c(4, 1, 8, 0, 0, 0, 0, 23, 28, 0, 0, 0, 4, 0, 3, 0, 0, 2, 0, 5, 0, 0, 0, 0, 0),location="Reserve")
 
 
@@ -94,6 +93,8 @@ qqplot_uc_reserves <- ggplot((uc_reserves), aes(sample = cig_butts)) +
 
 qqplot_uc_reserves
 
+shapiro.test(uc_reserves$cig_butts)
+
 qqplot_urban_open <- ggplot((urban_open), aes(sample = cig_butts)) +
   geom_qq() +
   labs(title = "Urban Open Space") +
@@ -101,18 +102,14 @@ qqplot_urban_open <- ggplot((urban_open), aes(sample = cig_butts)) +
 
 qqplot_urban_open
 
-# showing the skewed data
+shapiro.test(urban_open$cig_butts)
 
-```
-
-```{r}
 pairwise.wilcox.test(cig_df$cig_butts, cig_df$location, p.adjust.method = "bonferroni")
 
 wilcox.test(uc_reserves$cig_butts, urban_open$cig_butts, paired = FALSE)
-```
-The bonferroni adjustment takes the p value divided by the number of groups (for this, divide by two, due to UC Reserves and Urban Open Space)
 
-Mann Whitney U is an unpaired test of medians, whereas Wilcoxon is paired tests of medians between two groups. Default, paired = FALSE, comparing independent unpaired samples together. 
+```
+
 
 ```{r cig_load_1, fig.align='center',fig.cap="Figure 2. Boxplot showing cigarette butt load for the UC Reserve and for Urban Open Space, the boxes marking quantile 1, the median, quantile 3, and the dots denote the outliers."}
 boxplot_cig_load <- ggplot(data = cig_df, aes(x = location, y = cig_butts)) +
@@ -123,48 +120,31 @@ boxplot_cig_load <- ggplot(data = cig_df, aes(x = location, y = cig_butts)) +
 boxplot_cig_load
 ```
 
+## 4
+There is conclusive evidence that this new species of turtles' time between laid egg and hatching is temperature dependent. In order to determine this, first I visually inspected a scatter plot of the data, observing that there is a negative relationship between the number of days between laid egg and hatching and the temperature of the eggs being incubated. Then, I separated the data into four groups: 15C, 20C, 25C, 30C. Temperature is typically a continuous variable, but in this study, it is being used as a "treatment" for the eggs, and it is being forced into a discrete variable.
 
+Since there are four groups, and the data appears to meet the assumptions of normality, One of the groups, temperature 25C, is a bit off-normal, however, it is okay because no data is ever perfect, and it performs alright on the shapiro test. 
 
+I chose to do a parametric test, an anova test. 
 
+I tested for normality by visually inspecting qq plots and the shapiro test for each temperature group. Since these values from the Shapiro Wilk's tests are not less than .05, we can assume the sample data comes from a population that is normally distributed. I looked at the variances (Levene's Test) and we can fail to reject the null hypothesis, so we can operate as though the variances are equal, which adds credibility to my decision to go with an anova test. 
 
-## Question 4:
-Is there evidence that this new species of turtles' time between laid egg and hatching is temperature dependent? 
+I carried out Tukey's test, which accounts/provides a penalty for doing a bunch of comparisons between groups, and deflates the p value to minimize risk of Type I error, rejecting the null hypothesis when it is actually true.
 
-1. justify the appropriate statistical tests to use
-2. explain the results and conclusion of the test you selected
-3. make a figure with a caption to best explain the data, results, and conclusion
+```{r turtles_1, fig.align='center',fig.cap="Figure 3. Scatter plot showing the relationship between temperature and number of days to turtle egg hatching."}
+# Load in the data:
 
-
-Four groups: 15C, 20C, 25C, 30C
-
-how did you look at the data?
-what did you find?
-provide a nice figure?
-
-
-* not a reflection of temperature but rather of "treatment" (treatment 1, 2, 3, 4)
-* if you move away from two groups, then do ANOVA
-* check assumptions of ANOVA and determine whether to do ANOVA or non-parametric 
-* no data is perfect
-
-
-
-Load in the data:
-```{r}
 turtles <- read_csv(here("data", "Turtles.csv"))
 
 turtles_scatter <- ggplot(turtles, aes(x = Temperature, y = Days)) +
   geom_point() +
-  labs(title = "Relationship between temperature and number of days to turtle egg hatching", x = "Temperature (C)", y = "Days") +
+  labs(title = "New Turtle Species", x = "Temperature (C)", y = "Days") +
   geom_smooth(formula = y~x, method = lm) +
   theme_minimal()
 
 turtles_scatter
 
-# you have a discrete treatment (forced temp (which is typically continuous) into being discrete)
-
-# separate out 15C, 20C, 25C, 30C
-# do summary statistics for each of these - do you expect to see a difference? YES
+# do summary statistics for each of these - do I expect to see a difference? YES
 turtles_15c <- turtles %>% filter(Temperature == "15")
 summary(turtles_15c)
 
@@ -179,13 +159,8 @@ summary(turtles_30c)
 
 ```
 
-```{r}
-# test for normality using qq plot and shapiros test for each 
-# look at variances - is it wonkey? is it normal? *credibility if they are the same
-# TYPE 1 error ... four groups... what does a p value mean in light of running a bunch of tests!
-# three are normal and one is not *totally fine - you never have data that is perfect
-
-
+```{r, fig.show='hide'}
+# qq plot and shapiro test for each
 qqplot_15c <- ggplot(turtles_15c, 
                      aes(sample = Days)) +
                      geom_qq() +
@@ -223,35 +198,31 @@ qqplot_30c
 shapiro.test(turtles_30c$Days)
 
 
+LeveneTest(Days ~ as.factor(Temperature), data = turtles)
+
 ```
 
-Since these values from the Shapiro Wilk's tests are not less than .05, we can assume the sample data comes from a population that is normally distributed.
-
-Tukey's test: tukey accounts for doing a bunch of comparisons between groups, and deflates the p value to minimize risk of type one error.
-
-```{r}
+ANOVA test:
+```{r, fig.show='hide'}
 m_turtles_results <- aov(Days ~ as.factor(Temperature), data = turtles)
 
 m_turtles_results
 
 TukeyHSD(m_turtles_results)
 
+# We are able to look at the residual plots using the plot() command. Showing residual vs. fitted shows the distribution of turtle egg incubation time in days. These are the diagnostics. 
 # suppress plots or comment out
 plot(m_turtles_results)
 
-# write about the confirmation of the anova assumptions
+#RESIDUAL PLOT: the red line is showing you the trend in the data 
+#Q-Q PLOT: taking the residuals and giving you a Q-Q plot right away for inspection
+#SCALE LOCATION: (not used much)… it flags heteroskedasticity; some outliers are a bit farther away… you want to see a flat line
+#Cook’s distance: A measure of how much influence a single observation has on your model; could consider removing a data point to see if it improves the cook’s distance BECAUSE you think it is an outlier; cooks distance of 2 isn’t terrible, but 4, 5, and up are not good
+
 ```
-^^^ do these not make sense?
-We are able to look at the residual plots using the plot() command. Showing residual vs. fitted shows the distribution of turtle egg incubation time in days. These are the diagnostics. 
-
-RESIDUAL PLOT: the red line is showing you the trend in the data 
-Q-Q PLOT: taking the residuals and giving you a Q-Q plot right away for inspection
-SCALE LOCATION: (not used much)… it flags heteroskedasticity; some outliers are a bit farther away… you want to see a flat line
-Cook’s distance: A measure of how much influence a single observation has on your model; could consider removing a data point to see if it improves the cook’s distance BECAUSE you think it is an outlier
-cooks distance of 2 isn’t terrible, but 4, 5, and up are not good
 
 
-```{r turtles_1, fig.align='center',fig.cap="Figure 4. Plot showing data. Displayed are the means of each incubation temperature with the 95% confidence intervals."}
+```{r turtles_2, fig.align='center',fig.cap="Figure 4. Plot showing turtles data. Displayed are the means of each incubation temperature with the 95% confidence intervals."}
 
 ggline(turtles, x = "Temperature", y = "Days", 
        main = "Means days of incubation for turtle eggs in each temperature and 95% CI", 
